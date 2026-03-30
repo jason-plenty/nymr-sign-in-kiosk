@@ -9,7 +9,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<App
     {
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         optionsBuilder.UseSqlServer(
-            "Server=(localdb)\\mssqllocaldb;Database=NymrSignIn;Trusted_Connection=True;MultipleActiveResultSets=true",
+            "Server=localhost;Database=NymrSignIn;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True",
             sqlOptions => sqlOptions.EnableRetryOnFailure());
 
         return new AppDbContext(optionsBuilder.Options);
