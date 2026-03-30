@@ -1,0 +1,9 @@
+@if (IsVisible)
+{
+    <span class="spinner-inline" aria-label="Loading"></span>
+}
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+}

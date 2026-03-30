@@ -1,0 +1,13 @@
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="toast @CssClass" role="alert" aria-live="polite">
+        @Message
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public bool IsSuccess { get; set; }
+
+    private string CssClass => IsSuccess ? "toast-success" : "toast-warning";
+}

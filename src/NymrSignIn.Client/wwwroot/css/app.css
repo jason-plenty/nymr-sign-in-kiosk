@@ -1,0 +1,544 @@
+/* ============================================================
+   NYMR Construction Site Sign-In Kiosk — Global Styles
+   Theme: Construction-safety yellow (#FFD100) / black (#1a1a1a)
+   ============================================================ */
+
+:root {
+    --yellow: #FFD100;
+    --yellow-dark: #E6BC00;
+    --black: #1a1a1a;
+    --dark: #2d2d2d;
+    --mid: #555;
+    --light: #f0f0ec;
+    --white: #ffffff;
+    --red: #D32F2F;
+    --red-dark: #B71C1C;
+    --green: #2E7D32;
+    --blue: #1565C0;
+    --font: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    font-family: var(--font);
+    background: var(--light);
+    color: var(--black);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+}
+
+body {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* Prevent pull-to-refresh and rubber-banding on iOS */
+html {
+    overflow: hidden;
+    height: 100%;
+}
+
+body {
+    overflow: auto;
+    height: 100%;
+}
+
+/* ---- Typography ---- */
+h1, h2, h3 {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---- Form inputs ---- */
+input[type="text"] {
+    width: 100%;
+    padding: 16px;
+    font-size: 20px;
+    font-family: var(--font);
+    border: 3px solid #333;
+    border-radius: 8px;
+    background: #fffef5;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+input[type="text"]:focus {
+    outline: 3px solid var(--yellow);
+    outline-offset: -3px;
+}
+
+input[type="text"]::placeholder {
+    color: #aaa;
+}
+
+label {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 6px;
+}
+
+/* ---- Buttons ---- */
+button {
+    font-family: var(--font);
+    cursor: pointer;
+    border: none;
+    outline: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    min-height: 48px;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    display: block;
+    width: 100%;
+    padding: 22px;
+    font-size: 26px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--black);
+    background: var(--yellow);
+    border: 3px solid var(--black);
+    border-radius: 10px;
+}
+
+.btn-primary:active:not(:disabled) {
+    background: var(--yellow-dark);
+}
+
+.btn-danger {
+    padding: 16px 28px;
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--white);
+    background: var(--red);
+    border-radius: 8px;
+    min-width: 140px;
+}
+
+.btn-danger:active:not(:disabled) {
+    background: var(--red-dark);
+}
+
+.btn-nav-signout {
+    padding: 18px 40px;
+    font-size: 22px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--white);
+    background: var(--red-dark);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+}
+
+.btn-nav-back {
+    background: var(--white);
+    color: var(--red);
+    font-weight: 800;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-transform: uppercase;
+}
+
+.btn-icon {
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+    border-radius: 8px;
+}
+
+.btn-blue { background: var(--blue); }
+.btn-green { background: var(--green); }
+
+/* ---- Cards ---- */
+.card {
+    background: var(--white);
+    border: 3px solid var(--black);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.card-muted {
+    background: var(--white);
+    border: 3px solid #ccc;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.card-header {
+    margin: 0 0 16px;
+    font-size: 20px;
+    font-weight: 800;
+    text-transform: uppercase;
+    border-bottom: 3px solid var(--yellow);
+    padding-bottom: 8px;
+    color: var(--black);
+}
+
+.card-header-muted {
+    margin: 0 0 16px;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--mid);
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 8px;
+}
+
+/* ---- Person row ---- */
+.person-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8f8f5;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+
+.person-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--black);
+}
+
+.person-detail {
+    font-size: 14px;
+    color: var(--mid);
+    margin-top: 2px;
+}
+
+.signedout-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+    font-size: 16px;
+}
+
+.signedout-name {
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.signedout-detail {
+    color: var(--mid);
+    font-size: 14px;
+}
+
+/* ---- Empty state ---- */
+.empty-state {
+    color: var(--mid);
+    font-size: 18px;
+    text-align: center;
+    padding: 24px 0;
+    font-style: italic;
+}
+
+/* ---- Toast ---- */
+.toast {
+    padding: 14px 20px;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--white);
+}
+
+.toast-warning { background: #ff9800; }
+.toast-success { background: var(--green); }
+
+/* ---- Confirmation banner ---- */
+.confirmation-banner {
+    background: var(--green);
+    color: var(--white);
+    padding: 18px 20px;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* ---- Header bars ---- */
+.header-signin {
+    background: var(--black);
+    border-bottom: 6px solid var(--yellow);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-signout {
+    background: var(--red);
+    border-bottom: 6px solid var(--red-dark);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-title {
+    color: var(--yellow);
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.header-signout .header-title {
+    color: var(--white);
+}
+
+.header-date {
+    color: #ccc;
+    margin: 4px 0 0;
+    font-size: 14px;
+}
+
+.header-signout .header-date {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.on-site-badge {
+    background: var(--yellow);
+    color: var(--black);
+    font-weight: 800;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+/* ---- Footer bar (sign-out navigation) ---- */
+.footer-signout-nav {
+    background: var(--red);
+    border-top: 6px solid var(--red-dark);
+    padding: 16px 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.footer-signout-nav p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 15px;
+    margin: 0 0 10px;
+    font-weight: 600;
+}
+
+/* ---- Page layout ---- */
+.page-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-body {
+    padding: 16px 20px;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ---- Admin panel ---- */
+.admin-panel {
+    background: var(--white);
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.admin-panel p {
+    color: var(--mid);
+    font-size: 14px;
+    margin: 0 0 12px;
+}
+
+.admin-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* ---- Briefing text ---- */
+.briefing-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--dark);
+    white-space: pre-wrap;
+}
+
+/* ---- Signature pad ---- */
+.signature-canvas {
+    width: 100%;
+    height: 120px;
+    border: 3px solid #333;
+    border-radius: 8px;
+    background: #fffef5;
+    touch-action: none;
+    cursor: crosshair;
+    display: block;
+}
+
+.clear-signature {
+    margin-top: 6px;
+    background: none;
+    border: none;
+    color: var(--blue);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 0;
+    min-height: auto;
+}
+
+/* ---- Form spacing ---- */
+.form-group {
+    margin-bottom: 14px;
+}
+
+/* ---- Confirm dialog modal ---- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 32px 28px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+.modal-content h3 {
+    font-size: 22px;
+    margin-bottom: 12px;
+    text-transform: none;
+}
+
+.modal-content p {
+    font-size: 18px;
+    color: var(--mid);
+    margin-bottom: 24px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.modal-buttons button {
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 8px;
+    min-width: 120px;
+}
+
+/* ---- Loading spinner ---- */
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    color: var(--mid);
+    font-size: 18px;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #ddd;
+    border-top-color: var(--yellow);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.spinner-inline {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* ---- Blazor error UI ---- */
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/* ---- Validation ---- */
+.validation-message {
+    color: var(--red);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.field-error input[type="text"] {
+    border-color: var(--red);
+}

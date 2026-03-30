@@ -1,0 +1,175 @@
+@page "/signout"
+@inject IRegisterApiService RegisterApi
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageTitle>NYMR Site Sign-Out</PageTitle>
+
+<div class="page-container">
+    <!-- HEADER -->
+    <div class="header-signout">
+        <div>
+            <h1 class="header-title">Site Sign-Out</h1>
+            <p class="header-date">@_todayDisplay — Tap your name to sign out</p>
+        </div>
+        <button class="btn-nav-back" @onclick="GoToSignIn" aria-label="Back to sign in">
+            &larr; BACK TO SIGN IN
+        </button>
+    </div>
+
+    <!-- TOAST -->
+    <ToastNotification Message="@_toastMessage" IsSuccess="true" />
+
+    <div class="page-body">
+        <!-- CURRENTLY ON SITE -->
+        <div class="card">
+            <h2 class="card-header">Currently On Site (@_signedInList.Count)</h2>
+
+            @if (_signedInList.Count == 0)
+            {
+                <p class="empty-state">Nobody is currently signed in.</p>
+            }
+            else
+            {
+                @foreach (var person in _signedInList)
+                {
+                    <PersonCard Entry="@person"
+                                OnSignOut="@RequestSignOut"
+                                IsLoading="@_isLoading" />
+                }
+            }
+        </div>
+
+        <!-- SIGNED OUT TODAY -->
+        <SignedOutLog Entries="@_signedOutList" />
+
+        <!-- ADMIN PANEL -->
+        <AdminPanel />
+    </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<ConfirmDialog IsVisible="@_showConfirmDialog"
+               Title="Sign Out"
+               Message="@_confirmMessage"
+               OnConfirm="@ConfirmSignOutAsync"
+               OnCancel="@CancelSignOut" />
+
+@code {
+    private List<SignedInEntry> _signedInList = [];
+    private List<SignedOutEntry> _signedOutList = [];
+    private bool _isLoading;
+    private string? _toastMessage;
+    private bool _showConfirmDialog;
+    private string _confirmMessage = string.Empty;
+    private SignedInEntry? _pendingSignOut;
+    private PeriodicTimer? _pollTimer;
+    private CancellationTokenSource? _pollCts;
+    private readonly string _todayDisplay = DateTime.Now.ToString("dd/MM/yyyy");
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+        StartPolling();
+    }
+
+    private void StartPolling()
+    {
+        _pollCts = new CancellationTokenSource();
+        _pollTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        _ = PollLoopAsync(_pollCts.Token);
+    }
+
+    private async Task PollLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (await _pollTimer!.WaitForNextTickAsync(cancellationToken))
+            {
+                await RefreshAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected on dispose
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            var data = await RegisterApi.GetTodaysRegisterAsync();
+            _signedInList = data.SignedIn.ToList();
+            _signedOutList = data.SignedOut.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Refresh failed: {ex.Message}");
+        }
+    }
+
+    private void RequestSignOut(SignedInEntry entry)
+    {
+        _pendingSignOut = entry;
+        _confirmMessage = $"Sign out {entry.Name}?";
+        _showConfirmDialog = true;
+    }
+
+    private async Task ConfirmSignOutAsync()
+    {
+        _showConfirmDialog = false;
+        if (_pendingSignOut is null) return;
+
+        _isLoading = true;
+        var personName = _pendingSignOut.Name;
+        try
+        {
+            var result = await RegisterApi.SignOutAsync(_pendingSignOut.Id);
+            await RefreshAsync();
+            ShowToast($"{personName} signed out at {result.TimeOut}.");
+        }
+        catch
+        {
+            ShowToast("Sign-out failed. Please try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+            _pendingSignOut = null;
+        }
+    }
+
+    private void CancelSignOut()
+    {
+        _showConfirmDialog = false;
+        _pendingSignOut = null;
+    }
+
+    private void ShowToast(string message)
+    {
+        _toastMessage = message;
+        _ = HideToastAsync();
+    }
+
+    private async Task HideToastAsync()
+    {
+        await Task.Delay(4000);
+        _toastMessage = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void GoToSignIn()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _pollCts?.Cancel();
+        _pollTimer?.Dispose();
+        _pollCts?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}

@@ -1,0 +1,13 @@
+@if (IsVisible)
+{
+    <div class="confirmation-banner" role="status" aria-live="polite">
+        &#x2713; @Name — Signed in at @Time on @Date
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public string Time { get; set; } = string.Empty;
+    [Parameter] public string Date { get; set; } = string.Empty;
+}

@@ -1,0 +1,51 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<canvas @ref="_canvasRef" class="signature-canvas" aria-label="Signature pad — draw your signature here"></canvas>
+
+@code {
+    private ElementReference _canvasRef;
+    private bool _isInitialised;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("signaturePad.init", _canvasRef);
+            _isInitialised = true;
+        }
+    }
+
+    public async Task ClearAsync()
+    {
+        if (_isInitialised)
+            await JS.InvokeVoidAsync("signaturePad.clear", _canvasRef);
+    }
+
+    public async Task<bool> IsEmptyAsync()
+    {
+        if (!_isInitialised) return true;
+        return await JS.InvokeAsync<bool>("signaturePad.isEmpty", _canvasRef);
+    }
+
+    public async Task<string> ToDataUrlAsync()
+    {
+        if (!_isInitialised) return string.Empty;
+        return await JS.InvokeAsync<string>("signaturePad.toDataUrl", _canvasRef);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_isInitialised)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("signaturePad.dispose", _canvasRef);
+            }
+            catch (JSDisconnectedException)
+            {
+                // Component disposed after circuit disconnected — safe to ignore
+            }
+        }
+    }
+}

@@ -1,0 +1,55 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+## NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Local settings and secrets
+**/appsettings.Local.json
+**/local.settings.json
+.env
+*.pfx
+
+## IDE
+.idea/
+*.swp
+*~
+
+## Azurite local storage
+azurite-data/
+__azurite_db_*.json
+__blobstorage__/
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Node (prototype docs)
+node_modules/
+dist/
+
+## Python (prototype docs)
+.venv/
+__pycache__/
+*.pyc

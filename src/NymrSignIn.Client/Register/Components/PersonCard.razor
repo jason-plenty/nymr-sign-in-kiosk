@@ -1,0 +1,23 @@
+<div class="person-row">
+    <div>
+        <div class="person-name">@Entry.Name</div>
+        <div class="person-detail">@Entry.Organisation — In since @Entry.TimeIn</div>
+    </div>
+    <button class="btn-danger"
+            @onclick="OnSignOutClicked"
+            disabled="@IsLoading"
+            aria-label="Sign out @Entry.Name">
+        SIGN OUT
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public SignedInEntry Entry { get; set; } = default!;
+    [Parameter] public EventCallback<SignedInEntry> OnSignOut { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+
+    private async Task OnSignOutClicked()
+    {
+        await OnSignOut.InvokeAsync(Entry);
+    }
+}
