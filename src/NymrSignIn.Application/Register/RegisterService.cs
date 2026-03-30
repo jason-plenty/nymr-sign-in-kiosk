@@ -74,8 +74,15 @@ public sealed class RegisterService
 
         if (!string.IsNullOrWhiteSpace(request.SignatureBase64))
         {
-            var signatureUrl = await UploadSignatureAsync(entry.Id, dateIn, request.SignatureBase64, cancellationToken);
-            entry.SetSignatureUrl(signatureUrl);
+            try
+            {
+                var signatureUrl = await UploadSignatureAsync(entry.Id, dateIn, request.SignatureBase64, cancellationToken);
+                entry.SetSignatureUrl(signatureUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to upload signature for entry {EntryId}; continuing without signature", entry.Id);
+            }
         }
 
         await _repository.AddAsync(entry, cancellationToken);

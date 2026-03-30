@@ -8,7 +8,7 @@ public sealed class SiteRegisterEntryConfiguration : IEntityTypeConfiguration<Si
 {
     public void Configure(EntityTypeBuilder<SiteRegisterEntry> builder)
     {
-        builder.ToTable("SiteRegisterEntries");
+        builder.ToTable("SiteRegisterEntries", "kiosk");
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedNever();

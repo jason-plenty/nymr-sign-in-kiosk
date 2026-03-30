@@ -41,7 +41,7 @@ public sealed class RegisterController : ControllerBase
         }
 
         var result = await _registerService.SignInAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetTodaysRegisterAsync), result);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     [HttpPost("{id:guid}/signout")]

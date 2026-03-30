@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet ef:*)",
+      "Bash(dotnet run:*)",
+      "Bash(azurite --version)",
+      "Bash(npm list:*)",
+      "Bash(npm install:*)",
+      "Bash(cmd.exe /c \"npm install -g azurite\")",
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(where.exe node:*)",
+      "Bash(where.exe docker:*)",
+      "Bash(netstat -ano)",
+      "Bash(cmd.exe /c \"netstat -ano | findstr 5002\")",
+      "Bash(cmd.exe /c \"taskkill /PID 37236 /F\")",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :5002 | findstr LISTENING\")",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 5002 -ErrorAction SilentlyContinue | Select-Object OwningProcess, State\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 37236 -Force\")",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue | Select-Object OwningProcess -Unique\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 25864 -Force\")",
+      "Bash(curl -sk https://localhost:5001/api/v1/register)",
+      "Bash(curl -sk https://localhost:5002 -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -sk -X POST https://localhost:5001/api/v1/register/signin -H \"Content-Type: application/json\" -d '{\"\"name\"\":\"\"Test User\"\",\"\"organisation\"\":\"\"Test Org\"\"}')",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 34900 -Force\")",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue | Select-Object OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_OwningProcess -Force }\")",
+      "Bash(powershell.exe -Command \"\\(Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue\\)[0].OwningProcess | ForEach-Object { Stop-Process -Id $_-Force }\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-NetTCPConnection -LocalPort 5001 | Select-Object -First 1 -ExpandProperty OwningProcess\")",
+      "Bash(powershell.exe -NoProfile -Command \"Stop-Process -Id 19536 -Force\")",
+      "Bash(powershell.exe -NoProfile -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess\\) -Force\")",
+      "Bash(powershell.exe -NoProfile -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 5002 -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess\\) -Force\")",
+      "Bash(git -C \"c:/Users/jplenty/source/repos/nymr-sign-in-kiosk\" status)",
+      "Bash(git -C \"c:/Users/jplenty/source/repos/nymr-sign-in-kiosk\" diff)",
+      "Bash(git -C \"c:/Users/jplenty/source/repos/nymr-sign-in-kiosk\" log --oneline -5)"
+    ]
+  }
+}
