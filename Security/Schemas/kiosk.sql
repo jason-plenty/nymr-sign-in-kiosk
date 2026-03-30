@@ -1,0 +1,3 @@
+CREATE SCHEMA [kiosk]
+AUTHORIZATION [dbo]
+GO
