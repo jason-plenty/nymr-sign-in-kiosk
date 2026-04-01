@@ -12,7 +12,7 @@ using NymrSignIn.Infrastructure.Persistence;
 namespace NymrSignIn.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260330075343_InitialCreate")]
+    [Migration("20260401183354_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,6 +20,7 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("kiosk")
                 .HasAnnotation("ProductVersion", "8.0.25")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -60,7 +61,7 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("DateIn");
 
-                    b.ToTable("SiteRegisterEntries", (string)null);
+                    b.ToTable("SiteRegisterEntries", "kiosk");
                 });
 #pragma warning restore 612, 618
         }

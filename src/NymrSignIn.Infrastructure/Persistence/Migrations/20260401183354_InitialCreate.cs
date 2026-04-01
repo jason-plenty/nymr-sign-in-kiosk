@@ -11,8 +11,12 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "kiosk");
+
             migrationBuilder.CreateTable(
                 name: "SiteRegisterEntries",
+                schema: "kiosk",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -31,6 +35,7 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_SiteRegisterEntries_DateIn",
+                schema: "kiosk",
                 table: "SiteRegisterEntries",
                 column: "DateIn");
         }
@@ -39,7 +44,8 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "SiteRegisterEntries");
+                name: "SiteRegisterEntries",
+                schema: "kiosk");
         }
     }
 }
