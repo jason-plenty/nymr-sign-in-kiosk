@@ -6,10 +6,12 @@ namespace NymrSignIn.Api.Middleware;
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IHostEnvironment _environment;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHostEnvironment environment)
     {
         _logger = logger;
+        _environment = environment;
     }
 
     public async ValueTask<bool> TryHandleAsync(
@@ -38,9 +40,11 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         {
             Status = statusCode,
             Title = title,
-            Detail = statusCode == StatusCodes.Status500InternalServerError
-                ? "An unexpected error occurred."
-                : exception.Message
+            Detail = _environment.IsDevelopment()
+                ? exception.ToString()
+                : statusCode == StatusCodes.Status500InternalServerError
+                    ? "An unexpected error occurred."
+                    : exception.Message
         };
 
         httpContext.Response.StatusCode = statusCode;
