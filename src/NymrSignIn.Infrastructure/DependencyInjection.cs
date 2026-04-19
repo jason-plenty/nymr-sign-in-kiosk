@@ -47,7 +47,7 @@ public static class DependencyInjection
         services.AddScoped<ISignatureStorage, SignatureStorageService>();
 
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
-        services.AddScoped<IRegisterEmailService, SmtpEmailService>();
+        services.AddScoped<IRegisterEmailService, GraphEmailService>();
 
         services.Configure<SiteOptions>(configuration.GetSection(SiteOptions.SectionName));
         services.AddSingleton<ISiteCodeGenerator, SiteCodeGenerator>();

@@ -11,8 +11,12 @@ public sealed class EmailOptions
 
     public List<string> NotFitAlertToAddresses { get; init; } = [];
 
-    public string SmtpHost { get; init; } = "smtp.office365.com";
-    public int SmtpPort { get; init; } = 587;
-    public string SmtpUsername { get; init; } = string.Empty;
-    public string SmtpPassword { get; init; } = string.Empty;
+    public GraphEmailCredentials Graph { get; init; } = new();
+}
+
+public sealed class GraphEmailCredentials
+{
+    public string TenantId { get; init; } = string.Empty;
+    public string ClientId { get; init; } = string.Empty;
+    public string ClientSecret { get; init; } = string.Empty;
 }

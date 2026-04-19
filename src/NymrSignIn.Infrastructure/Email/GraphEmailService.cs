@@ -1,29 +1,34 @@
 using System.Globalization;
 using System.Text;
-using MailKit.Net.Smtp;
-using MailKit.Security;
+using Azure.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MimeKit;
+using Microsoft.Graph;
+using Microsoft.Graph.Models;
+using Microsoft.Graph.Users.Item.SendMail;
 using NymrSignIn.Application.Register;
 using NymrSignIn.Domain.Register;
 
 namespace NymrSignIn.Infrastructure.Email;
 
-public sealed class SmtpEmailService : IRegisterEmailService
+public sealed class GraphEmailService : IRegisterEmailService
 {
+    private static readonly string[] GraphScopes = ["https://graph.microsoft.com/.default"];
+
     private readonly EmailOptions _options;
     private readonly SiteOptions _siteOptions;
-    private readonly ILogger<SmtpEmailService> _logger;
+    private readonly ILogger<GraphEmailService> _logger;
+    private readonly Lazy<GraphServiceClient?> _graphClient;
 
-    public SmtpEmailService(
+    public GraphEmailService(
         IOptions<EmailOptions> options,
         IOptions<SiteOptions> siteOptions,
-        ILogger<SmtpEmailService> logger)
+        ILogger<GraphEmailService> logger)
     {
         _options = options.Value;
         _siteOptions = siteOptions.Value;
         _logger = logger;
+        _graphClient = new Lazy<GraphServiceClient?>(CreateGraphClient);
     }
 
     public async Task SendDailyRegisterEmailAsync(
@@ -42,14 +47,19 @@ public sealed class SmtpEmailService : IRegisterEmailService
 
         var message = BuildMessage(
             subject: $"Site Register — {_options.SiteName} — {dateStr}",
+            body: body,
             recipients: _options.ToAddresses);
 
-        var builder = new BodyBuilder { TextBody = body };
-        builder.Attachments.Add(
-            $"site-register-{date:yyyy-MM-dd}.csv",
-            csvBytes,
-            ContentType.Parse("text/csv"));
-        message.Body = builder.ToMessageBody();
+        message.Attachments =
+        [
+            new FileAttachment
+            {
+                OdataType = "#microsoft.graph.fileAttachment",
+                Name = $"site-register-{date:yyyy-MM-dd}.csv",
+                ContentType = "text/csv",
+                ContentBytes = csvBytes,
+            }
+        ];
 
         await SendAsync(message, "daily register", date.ToString("yyyy-MM-dd"), cancellationToken);
     }
@@ -98,55 +108,82 @@ public sealed class SmtpEmailService : IRegisterEmailService
 
         var message = BuildMessage(
             subject: $"NOT-FIT ALERT — {entry.Name} — {_options.SiteName}",
+            body: body.ToString(),
             recipients: recipients);
-
-        message.Body = new TextPart("plain") { Text = body.ToString() };
 
         await SendAsync(message, "not-fit alert", entry.Id.ToString(), cancellationToken);
     }
 
-    private MimeMessage BuildMessage(string subject, IEnumerable<string> recipients)
+    private static Message BuildMessage(string subject, string body, IEnumerable<string> recipients)
     {
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_options.FromDisplayName, _options.FromAddress));
-
-        foreach (var address in recipients)
+        return new Message
         {
-            if (string.IsNullOrWhiteSpace(address)) continue;
-            message.To.Add(MailboxAddress.Parse(address.Trim()));
-        }
-
-        message.Subject = subject;
-        return message;
+            Subject = subject,
+            Body = new ItemBody
+            {
+                ContentType = BodyType.Text,
+                Content = body,
+            },
+            ToRecipients = recipients
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => new Recipient
+                {
+                    EmailAddress = new EmailAddress { Address = a.Trim() },
+                })
+                .ToList(),
+        };
     }
 
-    private async Task SendAsync(MimeMessage message, string kind, string key, CancellationToken cancellationToken)
+    private async Task SendAsync(Message message, string kind, string key, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.SmtpHost)
-            || string.IsNullOrWhiteSpace(_options.SmtpUsername)
-            || string.IsNullOrWhiteSpace(_options.SmtpPassword))
+        var client = _graphClient.Value;
+        if (client is null)
         {
             _logger.LogWarning(
-                "SMTP not configured; skipping {Kind} email for {Key}. Set Email:SmtpHost / SmtpUsername / SmtpPassword.",
+                "Graph email not configured; skipping {Kind} email for {Key}. Set Email:Graph:TenantId / ClientId / ClientSecret.",
                 kind, key);
             return;
         }
 
-        using var client = new SmtpClient();
+        if (string.IsNullOrWhiteSpace(_options.FromAddress))
+        {
+            _logger.LogError("Cannot send {Kind} for {Key}: Email:FromAddress is not configured.", kind, key);
+            return;
+        }
+
+        var request = new SendMailPostRequestBody
+        {
+            Message = message,
+            SaveToSentItems = false,
+        };
+
         try
         {
-            await client.ConnectAsync(_options.SmtpHost, _options.SmtpPort, SecureSocketOptions.StartTls, cancellationToken);
-            await client.AuthenticateAsync(_options.SmtpUsername, _options.SmtpPassword, cancellationToken);
-            var response = await client.SendAsync(message, cancellationToken);
-            _logger.LogInformation("SMTP {Kind} sent for {Key}: {Response}", kind, key, response);
+            await client.Users[_options.FromAddress]
+                .SendMail
+                .PostAsync(request, cancellationToken: cancellationToken);
+
+            _logger.LogInformation("Graph {Kind} sent for {Key} from {From}", kind, key, _options.FromAddress);
         }
-        finally
+        catch (Exception ex)
         {
-            if (client.IsConnected)
-            {
-                await client.DisconnectAsync(quit: true, cancellationToken);
-            }
+            _logger.LogError(ex, "Graph {Kind} failed for {Key}", kind, key);
+            throw;
         }
+    }
+
+    private GraphServiceClient? CreateGraphClient()
+    {
+        var graph = _options.Graph;
+        if (string.IsNullOrWhiteSpace(graph.TenantId)
+            || string.IsNullOrWhiteSpace(graph.ClientId)
+            || string.IsNullOrWhiteSpace(graph.ClientSecret))
+        {
+            return null;
+        }
+
+        var credential = new ClientSecretCredential(graph.TenantId, graph.ClientId, graph.ClientSecret);
+        return new GraphServiceClient(credential, GraphScopes);
     }
 
     private static string BuildDailyBody(
