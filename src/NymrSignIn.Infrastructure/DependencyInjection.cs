@@ -10,7 +10,6 @@ using NymrSignIn.Infrastructure.Email;
 using NymrSignIn.Infrastructure.Persistence;
 using NymrSignIn.Infrastructure.Persistence.Register;
 using NymrSignIn.Infrastructure.Register;
-using SendGrid;
 
 namespace NymrSignIn.Infrastructure;
 
@@ -47,17 +46,8 @@ public static class DependencyInjection
 
         services.AddScoped<ISignatureStorage, SignatureStorageService>();
 
-        var emailSection = configuration.GetSection(EmailOptions.SectionName);
-        services.Configure<EmailOptions>(emailSection);
-
-        var sendGridApiKey = emailSection.GetValue<string>(nameof(EmailOptions.SendGridApiKey));
-        if (string.IsNullOrWhiteSpace(sendGridApiKey))
-        {
-            sendGridApiKey = "not-configured";
-        }
-        services.AddSingleton<ISendGridClient>(new SendGridClient(sendGridApiKey));
-
-        services.AddScoped<IRegisterEmailService, SendGridEmailService>();
+        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+        services.AddScoped<IRegisterEmailService, SmtpEmailService>();
 
         services.Configure<SiteOptions>(configuration.GetSection(SiteOptions.SectionName));
         services.AddSingleton<ISiteCodeGenerator, SiteCodeGenerator>();

@@ -1,28 +1,26 @@
 using System.Globalization;
 using System.Text;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MimeKit;
 using NymrSignIn.Application.Register;
 using NymrSignIn.Domain.Register;
-using SendGrid;
-using SendGrid.Helpers.Mail;
 
 namespace NymrSignIn.Infrastructure.Email;
 
-public sealed class SendGridEmailService : IRegisterEmailService
+public sealed class SmtpEmailService : IRegisterEmailService
 {
-    private readonly ISendGridClient _sendGridClient;
     private readonly EmailOptions _options;
     private readonly SiteOptions _siteOptions;
-    private readonly ILogger<SendGridEmailService> _logger;
+    private readonly ILogger<SmtpEmailService> _logger;
 
-    public SendGridEmailService(
-        ISendGridClient sendGridClient,
+    public SmtpEmailService(
         IOptions<EmailOptions> options,
         IOptions<SiteOptions> siteOptions,
-        ILogger<SendGridEmailService> logger)
+        ILogger<SmtpEmailService> logger)
     {
-        _sendGridClient = sendGridClient;
         _options = options.Value;
         _siteOptions = siteOptions.Value;
         _logger = logger;
@@ -39,34 +37,21 @@ public sealed class SendGridEmailService : IRegisterEmailService
         var conditional = entries.Where(e => e.Status == SiteStatus.OnSiteConditional).ToList();
         var dateStr = date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
-        var body = BuildEmailBody(entries.Count, signedOut.Count, signedIn, conditional, denied, dateStr);
-        var csvData = BuildCsvAttachment(entries);
+        var body = BuildDailyBody(entries.Count, signedOut.Count, signedIn, conditional, denied, dateStr);
+        var csvBytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(BuildCsv(entries))).ToArray();
 
-        var message = new SendGridMessage
-        {
-            From = new EmailAddress(_options.FromAddress),
-            Subject = $"Site Register — {_options.SiteName} — {dateStr}",
-            PlainTextContent = body
-        };
+        var message = BuildMessage(
+            subject: $"Site Register — {_options.SiteName} — {dateStr}",
+            recipients: _options.ToAddresses);
 
-        foreach (var address in _options.ToAddresses)
-        {
-            message.AddTo(address.Trim());
-        }
-
-        var csvBytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csvData)).ToArray();
-        var base64Csv = Convert.ToBase64String(csvBytes);
-        message.AddAttachment(
+        var builder = new BodyBuilder { TextBody = body };
+        builder.Attachments.Add(
             $"site-register-{date:yyyy-MM-dd}.csv",
-            base64Csv,
-            "text/csv");
+            csvBytes,
+            ContentType.Parse("text/csv"));
+        message.Body = builder.ToMessageBody();
 
-        var response = await _sendGridClient.SendEmailAsync(message, cancellationToken);
-
-        _logger.LogInformation(
-            "SendGrid daily register response for {Date}: {StatusCode}",
-            date,
-            response.StatusCode);
+        await SendAsync(message, "daily register", date.ToString("yyyy-MM-dd"), cancellationToken);
     }
 
     public async Task SendNotFitAlertAsync(
@@ -111,27 +96,60 @@ public sealed class SendGridEmailService : IRegisterEmailService
         body.AppendLine("If you authorise this person to enter the site, call them and read out the code.");
         body.AppendLine("They will enter it at the kiosk. The code is valid today only.");
 
-        var message = new SendGridMessage
-        {
-            From = new EmailAddress(_options.FromAddress),
-            Subject = $"NOT-FIT ALERT — {entry.Name} — {_options.SiteName}",
-            PlainTextContent = body.ToString()
-        };
+        var message = BuildMessage(
+            subject: $"NOT-FIT ALERT — {entry.Name} — {_options.SiteName}",
+            recipients: recipients);
 
-        foreach (var recipient in recipients)
-        {
-            message.AddTo(recipient);
-        }
+        message.Body = new TextPart("plain") { Text = body.ToString() };
 
-        var response = await _sendGridClient.SendEmailAsync(message, cancellationToken);
-
-        _logger.LogInformation(
-            "SendGrid not-fit alert for entry {EntryId}: {StatusCode}",
-            entry.Id,
-            response.StatusCode);
+        await SendAsync(message, "not-fit alert", entry.Id.ToString(), cancellationToken);
     }
 
-    private static string BuildEmailBody(
+    private MimeMessage BuildMessage(string subject, IEnumerable<string> recipients)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_options.FromDisplayName, _options.FromAddress));
+
+        foreach (var address in recipients)
+        {
+            if (string.IsNullOrWhiteSpace(address)) continue;
+            message.To.Add(MailboxAddress.Parse(address.Trim()));
+        }
+
+        message.Subject = subject;
+        return message;
+    }
+
+    private async Task SendAsync(MimeMessage message, string kind, string key, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_options.SmtpHost)
+            || string.IsNullOrWhiteSpace(_options.SmtpUsername)
+            || string.IsNullOrWhiteSpace(_options.SmtpPassword))
+        {
+            _logger.LogWarning(
+                "SMTP not configured; skipping {Kind} email for {Key}. Set Email:SmtpHost / SmtpUsername / SmtpPassword.",
+                kind, key);
+            return;
+        }
+
+        using var client = new SmtpClient();
+        try
+        {
+            await client.ConnectAsync(_options.SmtpHost, _options.SmtpPort, SecureSocketOptions.StartTls, cancellationToken);
+            await client.AuthenticateAsync(_options.SmtpUsername, _options.SmtpPassword, cancellationToken);
+            var response = await client.SendAsync(message, cancellationToken);
+            _logger.LogInformation("SMTP {Kind} sent for {Key}: {Response}", kind, key, response);
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                await client.DisconnectAsync(quit: true, cancellationToken);
+            }
+        }
+    }
+
+    private static string BuildDailyBody(
         int totalCount,
         int signedOutCount,
         List<SiteRegisterEntry> stillOnSite,
@@ -181,7 +199,7 @@ public sealed class SendGridEmailService : IRegisterEmailService
         return sb.ToString();
     }
 
-    private static string BuildCsvAttachment(IReadOnlyList<SiteRegisterEntry> entries)
+    private static string BuildCsv(IReadOnlyList<SiteRegisterEntry> entries)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Name,Organisation,Date,Time In,Time Out,Medical Status,Site Code,Additional Information,Status");
