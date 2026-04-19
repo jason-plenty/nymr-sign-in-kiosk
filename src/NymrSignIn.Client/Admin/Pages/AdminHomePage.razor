@@ -1,0 +1,221 @@
+@page "/admin"
+@attribute [Authorize]
+@layout AdminLayout
+@inject IAdminApiService AdminApi
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<PageTitle>Sign-In Register — Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4 admin-page-title">Site Sign-In Register</MudText>
+
+<MudPaper Class="pa-4 mb-4 admin-filter-panel" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudDatePicker Label="From"
+                           Date="@_fromDate"
+                           DateChanged="OnFromDateChanged"
+                           Editable="true"
+                           DateFormat="dd/MM/yyyy"
+                           Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudDatePicker Label="To"
+                           Date="@_toDate"
+                           DateChanged="OnToDateChanged"
+                           Editable="true"
+                           DateFormat="dd/MM/yyyy"
+                           Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="RegisterEntryStatus"
+                       Label="Status"
+                       Value="@_status"
+                       ValueChanged="OnStatusChanged">
+                <MudSelectItem Value="@RegisterEntryStatus.All">All</MudSelectItem>
+                <MudSelectItem Value="@RegisterEntryStatus.StillOnSite">Still on site</MudSelectItem>
+                <MudSelectItem Value="@RegisterEntryStatus.SignedOut">Signed out</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudTextField Label="Search name or organisation"
+                          Value="@_search"
+                          ValueChanged="@((string s) => OnSearchChanged(s))"
+                          DebounceInterval="350"
+                          Immediate="true"
+                          Clearable="true"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.Search" />
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudDataGrid @ref="_grid"
+             T="RegisterEntryDto"
+             ServerData="LoadGridDataAsync"
+             Dense="true"
+             Hover="true"
+             Striped="true"
+             SortMode="SortMode.Single"
+             RowsPerPage="25"
+             Loading="_isLoading">
+    <Columns>
+        <PropertyColumn Property="x => x.DateIn" Title="Date" Format="dd/MM/yyyy" SortBy="@(new Func<RegisterEntryDto, object>(x => x.DateIn))" />
+        <PropertyColumn Property="x => x.TimeIn" Title="Time In" Format="HH:mm" />
+        <PropertyColumn Property="x => x.TimeOut" Title="Time Out">
+            <CellTemplate>
+                @(context.Item.TimeOut?.ToString("HH:mm") ?? "—")
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.Name" Title="Name" />
+        <PropertyColumn Property="x => x.Organisation" Title="Organisation" />
+        <TemplateColumn Title="Status" Sortable="true" SortBy="@(x => x.IsSignedOut)">
+            <CellTemplate>
+                @if (context.Item.IsSignedOut)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Default">Signed out</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Success">On site</MudChip>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="RegisterEntryDto" PageSizeOptions="new[] { 10, 25, 50, 100 }" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No entries match the current filters.</MudText>
+    </NoRecordsContent>
+</MudDataGrid>
+
+@code {
+    private MudDataGrid<RegisterEntryDto>? _grid;
+    private DateTime? _fromDate = DateTime.Today;
+    private DateTime? _toDate = DateTime.Today;
+    private RegisterEntryStatus _status = RegisterEntryStatus.All;
+    private string? _search;
+    private bool _isLoading;
+    private CancellationTokenSource? _loadCts;
+
+    private async Task<GridData<RegisterEntryDto>> LoadGridDataAsync(GridState<RegisterEntryDto> state)
+    {
+        _loadCts?.Cancel();
+        _loadCts = new CancellationTokenSource();
+        var cancellationToken = _loadCts.Token;
+
+        _isLoading = true;
+        try
+        {
+            var (sortBy, sortDescending) = MapSort(state);
+
+            var criteria = new RegisterSearchCriteria
+            {
+                FromDate = _fromDate.HasValue ? DateOnly.FromDateTime(_fromDate.Value) : null,
+                ToDate = _toDate.HasValue ? DateOnly.FromDateTime(_toDate.Value) : null,
+                Status = _status,
+                Search = _search,
+                Page = state.Page + 1,
+                PageSize = state.PageSize,
+                SortBy = sortBy,
+                SortDescending = sortDescending
+            };
+
+            var result = await AdminApi.SearchAsync(criteria, cancellationToken);
+            return new GridData<RegisterEntryDto>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            return new GridData<RegisterEntryDto> { Items = [], TotalItems = 0 };
+        }
+        catch (AccessTokenNotAvailableException tokenEx)
+        {
+            tokenEx.Redirect();
+            return new GridData<RegisterEntryDto> { Items = [], TotalItems = 0 };
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("You are not signed in.", Severity.Warning);
+            return new GridData<RegisterEntryDto> { Items = [], TotalItems = 0 };
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.Forbidden)
+        {
+            Snackbar.Add("You do not have admin access.", Severity.Warning);
+            return new GridData<RegisterEntryDto> { Items = [], TotalItems = 0 };
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Failed to load register data. Please try again.", Severity.Error);
+            return new GridData<RegisterEntryDto> { Items = [], TotalItems = 0 };
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static (RegisterSortField SortBy, bool Descending) MapSort(GridState<RegisterEntryDto> state)
+    {
+        var sort = state.SortDefinitions.FirstOrDefault();
+        if (sort is null)
+        {
+            return (RegisterSortField.TimeIn, true);
+        }
+
+        var field = sort.SortBy switch
+        {
+            nameof(RegisterEntryDto.DateIn) => RegisterSortField.DateIn,
+            nameof(RegisterEntryDto.TimeIn) => RegisterSortField.TimeIn,
+            nameof(RegisterEntryDto.TimeOut) => RegisterSortField.TimeOut,
+            nameof(RegisterEntryDto.Name) => RegisterSortField.Name,
+            nameof(RegisterEntryDto.Organisation) => RegisterSortField.Organisation,
+            nameof(RegisterEntryDto.IsSignedOut) => RegisterSortField.IsSignedOut,
+            _ => RegisterSortField.TimeIn
+        };
+
+        return (field, sort.Descending);
+    }
+
+    private async Task OnFromDateChanged(DateTime? value)
+    {
+        _fromDate = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnToDateChanged(DateTime? value)
+    {
+        _toDate = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusChanged(RegisterEntryStatus value)
+    {
+        _status = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        _search = value;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_grid is not null)
+        {
+            await _grid.ReloadServerData();
+        }
+    }
+
+    public void Dispose()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+    }
+}

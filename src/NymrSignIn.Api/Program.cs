@@ -1,5 +1,9 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Identity.Web;
+using NymrSignIn.Api.Admin;
 using NymrSignIn.Api.Middleware;
 using NymrSignIn.Application;
 using NymrSignIn.Infrastructure;
@@ -9,6 +13,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+builder.Services.Configure<AdminSettings>(builder.Configuration.GetSection(AdminSettings.SectionName));
+builder.Services.AddSingleton<IAuthorizationHandler, AdminGroupAuthorizationHandler>();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminGroup", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new AdminGroupRequirement());
+    });
+});
 
 builder.Services.AddControllers();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -56,6 +75,8 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseHsts();
 app.UseHttpsRedirection();
 app.UseCors("Kiosk");
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())

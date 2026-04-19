@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NymrSignIn.Application.Register;
 using NymrSignIn.Application.Register.Dtos;
@@ -7,6 +8,7 @@ namespace NymrSignIn.Api.Register;
 
 [ApiController]
 [Route("api/v1/register")]
+[AllowAnonymous]
 public sealed class RegisterController : ControllerBase
 {
     private readonly RegisterService _registerService;

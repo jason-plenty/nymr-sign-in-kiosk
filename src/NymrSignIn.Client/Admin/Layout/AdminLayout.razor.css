@@ -1,0 +1,68 @@
+::deep * {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif !important;
+}
+
+::deep .admin-appbar {
+    border-bottom: 4px solid #FFD100 !important;
+}
+
+::deep .mud-typography-h4 {
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+::deep .mud-typography-h6 {
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+}
+
+::deep .mud-button-root {
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+}
+
+::deep .admin-title {
+    color: #FFD100 !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+}
+
+::deep .admin-user {
+    color: #cccccc !important;
+    font-weight: 500 !important;
+}
+
+::deep .admin-logout,
+::deep .admin-logout .mud-button-label {
+    color: #FFD100 !important;
+    border-color: #FFD100 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+}
+
+::deep .admin-logout:hover,
+::deep .admin-logout:hover .mud-button-label {
+    background-color: rgba(255, 209, 0, 0.15) !important;
+    color: #FFD100 !important;
+    border-color: #FFD100 !important;
+}
+
+::deep .mud-table-head .mud-table-cell {
+    background-color: #1a1a1a !important;
+    color: #FFD100 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 3px solid #FFD100 !important;
+}
+
+::deep .mud-table-head .mud-table-cell .mud-button-root {
+    color: #FFD100 !important;
+}
+
+::deep .mud-table-head .mud-table-cell .mud-table-sort-label-icon {
+    color: #FFD100 !important;
+}

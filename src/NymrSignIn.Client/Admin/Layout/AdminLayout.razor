@@ -1,0 +1,69 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+
+<MudThemeProvider Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="2" Dense="true" Class="admin-appbar">
+        <MudText Typo="Typo.h6" Class="admin-title">⚠ Site Sign-In Admin</MudText>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudText Class="mr-4 admin-user">@context.User.Identity?.Name</MudText>
+                <MudButton Variant="Variant.Outlined"
+                           Style="color: #FFD100; border-color: #FFD100;"
+                           OnClick="BeginSignOut"
+                           aria-label="Sign out">
+                    Sign out
+                </MudButton>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#1a1a1a",
+            PrimaryContrastText = "#FFD100",
+            Secondary = "#FFD100",
+            SecondaryContrastText = "#1a1a1a",
+            Tertiary = "#D32F2F",
+            AppbarBackground = "#1a1a1a",
+            AppbarText = "#FFD100",
+            Background = "#f0f0ec",
+            Surface = "#ffffff",
+            TextPrimary = "#1a1a1a",
+            TextSecondary = "#555555",
+            ActionDefault = "#2d2d2d",
+            DrawerBackground = "#1a1a1a",
+            DrawerText = "#FFD100",
+            Success = "#2E7D32",
+            Error = "#D32F2F",
+            Info = "#1565C0",
+            Warning = "#ff9800",
+            LinesDefault = "#dddddd",
+            TableLines = "#dddddd"
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "8px"
+        }
+    };
+
+    private void BeginSignOut()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+}

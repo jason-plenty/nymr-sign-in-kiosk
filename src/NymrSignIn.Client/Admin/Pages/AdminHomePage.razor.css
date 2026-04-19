@@ -1,0 +1,10 @@
+::deep .admin-page-title {
+    border-bottom: 4px solid #FFD100;
+    padding-bottom: 12px;
+    color: #1a1a1a;
+}
+
+::deep .admin-filter-panel {
+    border: 2px solid #1a1a1a !important;
+    border-left: 6px solid #FFD100 !important;
+}
