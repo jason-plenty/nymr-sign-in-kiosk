@@ -1,0 +1,144 @@
+@page "/medical"
+@inject IRegisterApiService RegisterApi
+@inject SignInFlowState FlowState
+@inject NavigationManager Navigation
+
+<PageTitle>Medical Self-Declaration</PageTitle>
+
+<div class="page-container">
+    <div class="header-medical">
+        <h1 class="header-title">Medical Self-Declaration</h1>
+        @if (_person is not null)
+        {
+            <p class="header-subtitle">@_person.Name — @_person.Organisation</p>
+        }
+    </div>
+
+    <ToastNotification Message="@_toastMessage" />
+
+    <div class="page-body">
+        <div class="card card-blue">
+            <h2 class="card-header card-header-blue">Daily Medical Self-Declaration</h2>
+            <p class="medical-intro">
+                Please read each statement carefully. By tapping <strong>YES, I CONFIRM</strong> you are
+                declaring that ALL of the following apply to you today:
+            </p>
+
+            @foreach (var group in MedicalSections.All)
+            {
+                <div class="medical-group">
+                    <h3 class="medical-group-title">@group.Title</h3>
+                    @if (!string.IsNullOrWhiteSpace(group.Intro))
+                    {
+                        <p class="medical-intro">@group.Intro</p>
+                    }
+                    @foreach (var item in group.Items)
+                    {
+                        <div class="medical-statement @group.CssClass">
+                            <span class="medical-statement-icon">@group.Icon</span>
+                            <span>@item</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="card">
+            <p style="text-align:center; font-weight:700; margin: 0; color: var(--dark);">
+                Can you confirm ALL of the above statements?
+            </p>
+            <p style="text-align:center; color: var(--mid); font-size: 14px; margin: 10px 0 0;">
+                Tap <strong>NO</strong> if you cannot — you will be asked to contact the Site Controller before entry is permitted.
+            </p>
+        </div>
+
+        <button class="cancel-link" type="button" @onclick="CancelFlow">
+            Cancel and return to sign-in
+        </button>
+    </div>
+
+    <div class="footer-action-bar">
+        <button class="btn-footer btn-footer-red"
+                type="button"
+                @onclick="HandleNotFitAsync"
+                disabled="@_isSubmitting"
+                aria-label="No, I cannot confirm">
+            @if (_isSubmitting)
+            {
+                <LoadingSpinner IsVisible="true" />
+                <span>PROCESSING...</span>
+            }
+            else
+            {
+                <span>&#x274C; NO, I CANNOT CONFIRM</span>
+            }
+        </button>
+        <button class="btn-footer btn-footer-green"
+                type="button"
+                @onclick="GoToFitForm"
+                disabled="@_isSubmitting"
+                aria-label="Yes, I confirm I am fit for duty">
+            &#x2705; YES, I CONFIRM
+        </button>
+    </div>
+</div>
+
+@code {
+    private SignInResponseModel? _person;
+    private bool _isSubmitting;
+    private string? _toastMessage;
+
+    protected override void OnInitialized()
+    {
+        _person = FlowState.CurrentPerson;
+        if (_person is null)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private void GoToFitForm()
+    {
+        if (_person is null) return;
+        Navigation.NavigateTo("/fit-form");
+    }
+
+    private async Task HandleNotFitAsync()
+    {
+        if (_person is null) return;
+        _isSubmitting = true;
+        try
+        {
+            var result = await RegisterApi.DeclareNotFitAsync(_person.Id, null);
+            FlowState.SetNotFitContext(result);
+            Navigation.NavigateTo("/not-permitted");
+        }
+        catch
+        {
+            ShowToast("Something went wrong. Please try again.");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void CancelFlow()
+    {
+        FlowState.Reset();
+        Navigation.NavigateTo("/");
+    }
+
+    private void ShowToast(string message)
+    {
+        _toastMessage = message;
+        _ = HideToastAsync();
+    }
+
+    private async Task HideToastAsync()
+    {
+        await Task.Delay(4000);
+        _toastMessage = null;
+        await InvokeAsync(StateHasChanged);
+    }
+}

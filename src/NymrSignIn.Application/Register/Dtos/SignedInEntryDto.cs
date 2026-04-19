@@ -5,4 +5,6 @@ public sealed record SignedInEntryDto(
     string Name,
     string Organisation,
     string DateIn,
-    string TimeIn);
+    string TimeIn,
+    string MedicalStatus,
+    string Status);

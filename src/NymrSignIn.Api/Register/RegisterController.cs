@@ -37,13 +37,124 @@ public sealed class RegisterController : ControllerBase
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
-            return ValidationProblem(
-                new ValidationProblemDetails(
-                    validationResult.ToDictionary()));
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
         }
 
         var result = await _registerService.SignInAsync(request, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, result);
+    }
+
+    [HttpPost("{id:guid}/confirm-fit")]
+    [ProducesResponseType(typeof(ConfirmFitResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ConfirmFitAsync(
+        Guid id,
+        [FromBody] ConfirmFitRequest request,
+        [FromServices] IValidator<ConfirmFitRequest> validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        try
+        {
+            var result = await _registerService.ConfirmFitAsync(id, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Cannot declare fit",
+                detail: ex.Message);
+        }
+    }
+
+    [HttpPost("{id:guid}/declare-not-fit")]
+    [ProducesResponseType(typeof(DeclareNotFitResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeclareNotFitAsync(
+        Guid id,
+        [FromBody] DeclareNotFitRequest request,
+        [FromServices] IValidator<DeclareNotFitRequest> validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        try
+        {
+            var result = await _registerService.DeclareNotFitAsync(id, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Cannot declare not fit",
+                detail: ex.Message);
+        }
+    }
+
+    [HttpPost("{id:guid}/submit-site-code")]
+    [ProducesResponseType(typeof(ConfirmFitResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> SubmitSiteCodeAsync(
+        Guid id,
+        [FromBody] SubmitSiteCodeRequest request,
+        [FromServices] IValidator<SubmitSiteCodeRequest> validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        try
+        {
+            var result = await _registerService.SubmitSiteCodeAsync(id, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidSiteCodeException ex)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: "Invalid site code",
+                detail: ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Cannot submit site code",
+                detail: ex.Message);
+        }
     }
 
     [HttpPost("{id:guid}/signout")]
@@ -51,8 +162,15 @@ public sealed class RegisterController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SignOutAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _registerService.SignOutAsync(id, cancellationToken);
-        return Ok(result);
+        try
+        {
+            var result = await _registerService.SignOutAsync(id, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpGet("export")]

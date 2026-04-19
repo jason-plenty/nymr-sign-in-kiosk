@@ -8,4 +8,8 @@ public interface IRegisterEmailService
         IReadOnlyList<SiteRegisterEntry> entries,
         DateOnly date,
         CancellationToken cancellationToken);
+
+    Task SendNotFitAlertAsync(
+        SiteRegisterEntry entry,
+        CancellationToken cancellationToken);
 }

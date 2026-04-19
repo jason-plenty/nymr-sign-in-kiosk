@@ -12,6 +12,7 @@ public sealed class RegisterService
     private readonly IRegisterRepository _repository;
     private readonly ISignatureStorage _signatureStorage;
     private readonly IRegisterEmailService _emailService;
+    private readonly ISiteCodeGenerator _siteCodeGenerator;
     private readonly TimeProvider _timeProvider;
     private readonly SiteOptions _siteOptions;
     private readonly ILogger<RegisterService> _logger;
@@ -20,6 +21,7 @@ public sealed class RegisterService
         IRegisterRepository repository,
         ISignatureStorage signatureStorage,
         IRegisterEmailService emailService,
+        ISiteCodeGenerator siteCodeGenerator,
         TimeProvider timeProvider,
         IOptions<SiteOptions> siteOptions,
         ILogger<RegisterService> logger)
@@ -27,6 +29,7 @@ public sealed class RegisterService
         _repository = repository;
         _signatureStorage = signatureStorage;
         _emailService = emailService;
+        _siteCodeGenerator = siteCodeGenerator;
         _timeProvider = timeProvider;
         _siteOptions = siteOptions.Value;
         _logger = logger;
@@ -38,14 +41,17 @@ public sealed class RegisterService
         var entries = await _repository.GetEntriesByDateAsync(today, cancellationToken);
 
         var signedIn = entries
-            .Where(e => !e.IsSignedOut)
+            .Where(e => !e.IsSignedOut
+                && e.Status is SiteStatus.OnSite or SiteStatus.OnSiteConditional)
             .OrderBy(e => e.TimeIn)
             .Select(e => new SignedInEntryDto(
                 e.Id,
                 e.Name,
                 e.Organisation,
-                e.DateIn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
-                e.TimeIn.ToString("HH:mm", CultureInfo.InvariantCulture)))
+                FormatDate(e.DateIn),
+                FormatTime(e.TimeIn),
+                DescribeMedical(e.MedicalStatus),
+                DescribeStatus(e.Status)))
             .ToList();
 
         var signedOut = entries
@@ -55,12 +61,23 @@ public sealed class RegisterService
                 e.Id,
                 e.Name,
                 e.Organisation,
-                e.DateIn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
-                e.TimeIn.ToString("HH:mm", CultureInfo.InvariantCulture),
-                e.TimeOut!.Value.ToString("HH:mm", CultureInfo.InvariantCulture)))
+                FormatDate(e.DateIn),
+                FormatTime(e.TimeIn),
+                FormatTime(e.TimeOut!.Value)))
             .ToList();
 
-        return new RegisterResponse(signedIn, signedOut);
+        var denied = entries
+            .Where(e => e.Status == SiteStatus.Denied)
+            .OrderBy(e => e.TimeIn)
+            .Select(e => new DeniedEntryDto(
+                e.Id,
+                e.Name,
+                e.Organisation,
+                FormatDate(e.DateIn),
+                FormatTime(e.TimeIn)))
+            .ToList();
+
+        return new RegisterResponse(signedIn, signedOut, denied);
     }
 
     public async Task<SignInResponse> SignInAsync(SignInRequest request, CancellationToken cancellationToken)
@@ -87,12 +104,94 @@ public sealed class RegisterService
 
         await _repository.AddAsync(entry, cancellationToken);
 
-        _logger.LogInformation("Person {Name} signed in at {TimeIn}", entry.Name, timeIn);
+        _logger.LogInformation("Person {Name} signed in at {TimeIn} — status {Status}", entry.Name, timeIn, entry.Status);
 
         return new SignInResponse(
             entry.Id,
-            dateIn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
-            timeIn.ToString("HH:mm", CultureInfo.InvariantCulture));
+            entry.Name,
+            entry.Organisation,
+            FormatDate(dateIn),
+            FormatTime(timeIn));
+    }
+
+    public async Task<ConfirmFitResponse> ConfirmFitAsync(
+        Guid id,
+        ConfirmFitRequest request,
+        CancellationToken cancellationToken)
+    {
+        var entry = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Register entry {id} not found.");
+
+        entry.DeclareFit(request.AdditionalInfo, request.SiteCode);
+        await _repository.UpdateAsync(entry, cancellationToken);
+
+        _logger.LogInformation("Person {Name} declared FIT", entry.Name);
+
+        return new ConfirmFitResponse(
+            entry.Id,
+            entry.Name,
+            entry.Organisation,
+            FormatDate(entry.DateIn),
+            FormatTime(entry.TimeIn),
+            DescribeStatus(entry.Status));
+    }
+
+    public async Task<DeclareNotFitResponse> DeclareNotFitAsync(
+        Guid id,
+        DeclareNotFitRequest request,
+        CancellationToken cancellationToken)
+    {
+        var entry = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Register entry {id} not found.");
+
+        var generatedCode = _siteCodeGenerator.Generate();
+        entry.DeclareNotFit(request.AdditionalInfo, generatedCode);
+        await _repository.UpdateAsync(entry, cancellationToken);
+
+        _logger.LogInformation("Person {Name} declared NOT FIT — site code issued", entry.Name);
+
+        try
+        {
+            await _emailService.SendNotFitAlertAsync(entry, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send not-fit alert email for entry {EntryId}", entry.Id);
+        }
+
+        return new DeclareNotFitResponse(
+            entry.Id,
+            _siteOptions.SiteController.Name,
+            _siteOptions.SiteController.Email,
+            _siteOptions.SiteController.Phone);
+    }
+
+    public async Task<ConfirmFitResponse> SubmitSiteCodeAsync(
+        Guid id,
+        SubmitSiteCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var entry = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Register entry {id} not found.");
+
+        var accepted = entry.TrySubmitSiteCode(request.SiteCode, request.AdditionalInfo);
+        await _repository.UpdateAsync(entry, cancellationToken);
+
+        if (!accepted)
+        {
+            _logger.LogWarning("Invalid site code submitted for entry {EntryId}", entry.Id);
+            throw new InvalidSiteCodeException("The site code you entered is not recognised. Check with the Site Controller and try again.");
+        }
+
+        _logger.LogInformation("Entry {EntryId} authorised on conditional entry", entry.Id);
+
+        return new ConfirmFitResponse(
+            entry.Id,
+            entry.Name,
+            entry.Organisation,
+            FormatDate(entry.DateIn),
+            FormatTime(entry.TimeIn),
+            DescribeStatus(entry.Status));
     }
 
     public async Task<SignOutResponse> SignOutAsync(Guid id, CancellationToken cancellationToken)
@@ -108,7 +207,7 @@ public sealed class RegisterService
 
         _logger.LogInformation("Person {Name} signed out at {TimeOut}", entry.Name, timeOut);
 
-        return new SignOutResponse(timeOut.ToString("HH:mm", CultureInfo.InvariantCulture));
+        return new SignOutResponse(FormatTime(timeOut));
     }
 
     public async Task<byte[]> ExportCsvAsync(CancellationToken cancellationToken)
@@ -117,20 +216,26 @@ public sealed class RegisterService
         var entries = await _repository.GetEntriesByDateAsync(today, cancellationToken);
 
         var sb = new StringBuilder();
-        sb.AppendLine("Name,Organisation,Date,Time In,Time Out");
+        sb.AppendLine("Name,Organisation,Date,Time In,Time Out,Medical Status,Site Code,Additional Information,Status");
 
         foreach (var entry in entries.OrderBy(e => e.TimeIn))
         {
-            var timeOut = entry.IsSignedOut
-                ? entry.TimeOut!.Value.ToString("HH:mm", CultureInfo.InvariantCulture)
-                : "STILL ON SITE";
+            var timeOut = entry.Status == SiteStatus.Denied
+                ? "ENTRY DENIED"
+                : entry.IsSignedOut
+                    ? FormatTime(entry.TimeOut!.Value)
+                    : "STILL ON SITE";
 
             sb.AppendLine(string.Join(",",
                 CsvEscape(entry.Name),
                 CsvEscape(entry.Organisation),
-                entry.DateIn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
-                entry.TimeIn.ToString("HH:mm", CultureInfo.InvariantCulture),
-                timeOut));
+                FormatDate(entry.DateIn),
+                FormatTime(entry.TimeIn),
+                timeOut,
+                CsvEscape(DescribeMedical(entry.MedicalStatus)),
+                CsvEscape(entry.SiteCode ?? string.Empty),
+                CsvEscape(entry.AdditionalInfo ?? string.Empty),
+                CsvEscape(DescribeStatus(entry.Status))));
         }
 
         return Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
@@ -169,6 +274,28 @@ public sealed class RegisterService
     }
 
     private DateOnly GetUkDateNow() => DateOnly.FromDateTime(GetUkDateTimeNow());
+
+    private static string FormatDate(DateOnly date) =>
+        date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+    private static string FormatTime(TimeOnly time) =>
+        time.ToString("HH:mm", CultureInfo.InvariantCulture);
+
+    private static string DescribeStatus(SiteStatus status) => status switch
+    {
+        SiteStatus.OnSite => "on-site",
+        SiteStatus.OnSiteConditional => "on-site-conditional",
+        SiteStatus.Denied => "denied",
+        _ => "pending"
+    };
+
+    private static string DescribeMedical(MedicalStatus status) => status switch
+    {
+        MedicalStatus.Fit => "Medically Fit - No Conditions",
+        MedicalStatus.NotFit => "Not Fit - Entry Denied",
+        MedicalStatus.Conditional => "Conditional Entry - Authorised by Site Controller",
+        _ => string.Empty
+    };
 
     private static string CsvEscape(string value)
     {

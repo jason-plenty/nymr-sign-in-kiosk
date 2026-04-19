@@ -1,0 +1,21 @@
+@if (Entries.Count > 0)
+{
+    <div class="card-muted" style="border-color: var(--orange);">
+        <h2 class="card-header-muted card-header-orange">
+            &#x26D4; Denied Entry Today (@Entries.Count)
+        </h2>
+        @foreach (var person in Entries)
+        {
+            <div class="denied-row">
+                <span class="signedout-name">@person.Name</span>
+                <span class="signedout-detail" style="margin-left:8px;">
+                    @person.Organisation — @person.TimeIn
+                </span>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<DeniedEntry> Entries { get; set; } = [];
+}

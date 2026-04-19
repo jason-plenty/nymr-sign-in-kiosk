@@ -36,7 +36,27 @@ public sealed class SiteRegisterEntryConfiguration : IEntityTypeConfiguration<Si
         builder.Property(e => e.CreatedAtUtc)
             .IsRequired();
 
+        builder.Property(e => e.Status)
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .IsRequired();
+
+        builder.Property(e => e.MedicalStatus)
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .IsRequired();
+
+        builder.Property(e => e.AdditionalInfo)
+            .HasMaxLength(2000);
+
+        builder.Property(e => e.SiteCode)
+            .HasMaxLength(32);
+
+        builder.Property(e => e.SiteCodeGenerated)
+            .HasMaxLength(32);
+
         builder.HasIndex(e => e.DateIn);
+        builder.HasIndex(e => new { e.DateIn, e.Status });
 
         builder.Ignore(e => e.IsSignedOut);
     }

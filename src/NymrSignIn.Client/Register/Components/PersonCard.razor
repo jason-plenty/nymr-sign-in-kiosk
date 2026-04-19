@@ -1,7 +1,17 @@
 <div class="person-row">
     <div>
         <div class="person-name">@Entry.Name</div>
-        <div class="person-detail">@Entry.Organisation — In since @Entry.TimeIn</div>
+        <div class="person-detail">
+            @Entry.Organisation — In since @Entry.TimeIn
+            @if (Entry.Status == "on-site-conditional")
+            {
+                <span class="status-pill status-pill-conditional">Conditional</span>
+            }
+            else if (!string.IsNullOrEmpty(Entry.MedicalStatus))
+            {
+                <span class="status-pill status-pill-fit">Fit</span>
+            }
+        </div>
     </div>
     <button class="btn-danger"
             @onclick="OnSignOutClicked"

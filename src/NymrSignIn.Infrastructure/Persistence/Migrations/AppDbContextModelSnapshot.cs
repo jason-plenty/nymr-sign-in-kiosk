@@ -18,7 +18,7 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("kiosk")
-                .HasAnnotation("ProductVersion", "8.0.25")
+                .HasAnnotation("ProductVersion", "8.0.26")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -28,11 +28,20 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AdditionalInfo")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<DateOnly>("DateIn")
                         .HasColumnType("date");
+
+                    b.Property<string>("MedicalStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -48,6 +57,19 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
+                    b.Property<string>("SiteCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("SiteCodeGenerated")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<TimeOnly>("TimeIn")
                         .HasColumnType("time");
 
@@ -57,6 +79,8 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DateIn");
+
+                    b.HasIndex("DateIn", "Status");
 
                     b.ToTable("SiteRegisterEntries", "kiosk");
                 });

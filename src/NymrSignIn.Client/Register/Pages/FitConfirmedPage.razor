@@ -1,0 +1,63 @@
+@page "/fit-confirmed"
+@inject SignInFlowState FlowState
+@inject NavigationManager Navigation
+
+<PageTitle>Welcome to Site</PageTitle>
+
+<div class="page-container">
+    <div class="header-fit">
+        <h1 class="header-title">&#x2705; Authorised — You May Enter Site</h1>
+    </div>
+
+    <div class="centred-body">
+        <div class="card card-green welcome-panel">
+            <div class="welcome-icon">&#x2705;</div>
+            <h2 class="welcome-title">WELCOME TO SITE</h2>
+            @if (_confirmation is not null)
+            {
+                <p class="welcome-name">@_confirmation.Name</p>
+                <p class="welcome-org">@_confirmation.Organisation</p>
+                <p class="welcome-meta">
+                    Signed in at <strong>@_confirmation.TimeIn</strong> on <strong>@_confirmation.DateIn</strong>
+                </p>
+            }
+            <div class="welcome-note">
+                @StatusMessage
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-action-bar">
+        <button class="btn-footer btn-footer-green"
+                type="button"
+                @onclick="Done"
+                aria-label="Done — next person">
+            &#x2705; DONE — NEXT PERSON
+        </button>
+    </div>
+</div>
+
+@code {
+    private ConfirmFitResponseModel? _confirmation;
+
+    protected override void OnInitialized()
+    {
+        _confirmation = FlowState.Confirmation;
+        if (_confirmation is null)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private string StatusMessage => _confirmation?.Status switch
+    {
+        "on-site-conditional" => "You are recorded as ON SITE on conditional entry, authorised by the Site Controller. Remember to SIGN OUT when you leave.",
+        _ => "You are recorded as ON SITE and medically fit for duty. Remember to SIGN OUT when you leave."
+    };
+
+    private void Done()
+    {
+        FlowState.Reset();
+        Navigation.NavigateTo("/");
+    }
+}

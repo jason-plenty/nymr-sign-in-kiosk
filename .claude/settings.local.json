@@ -32,7 +32,24 @@
       "Bash(powershell.exe -NoProfile -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 5002 -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess\\) -Force\")",
       "Bash(git -C \"c:/Users/jplenty/source/repos/nymr-sign-in-kiosk\" status)",
       "Bash(git -C \"c:/Users/jplenty/source/repos/nymr-sign-in-kiosk\" diff)",
-      "Bash(git -C \"c:/Users/jplenty/source/repos/nymr-sign-in-kiosk\" log --oneline -5)"
+      "Bash(git -C \"c:/Users/jplenty/source/repos/nymr-sign-in-kiosk\" log --oneline -5)",
+      "Bash(curl -s https://nymr-signin-api.azurewebsites.net/api/v1/register)",
+      "Bash(az webapp:*)",
+      "Bash(rm -rf publish/api)",
+      "Bash(dotnet publish:*)",
+      "Bash(dotnet build *)",
+      "Bash(az ad *)",
+      "Bash(git push *)",
+      "Bash(kill bg_b2ut1yvp2)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(taskkill //F //PID 33580)",
+      "Bash(taskkill //F //IM dotnet.exe //FI \"WINDOWTITLE eq NymrSignIn.Api*\")",
+      "Bash(dotnet tool *)",
+      "Bash(tasklist //FI \"PID eq 7972\")",
+      "Bash(taskkill //F //PID 7972)",
+      "Bash(taskkill //F //PID 36672)",
+      "Bash(taskkill //F //PID 11532)",
+      "Bash(git add *)"
     ]
   }
 }

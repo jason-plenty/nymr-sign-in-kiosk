@@ -1,0 +1,138 @@
+@page "/fit-form"
+@inject IRegisterApiService RegisterApi
+@inject SignInFlowState FlowState
+@inject NavigationManager Navigation
+
+<PageTitle>Medically Fit — Confirmed</PageTitle>
+
+<div class="page-container">
+    <div class="header-fit">
+        <h1 class="header-title">&#x2705; Medically Fit — Confirmed</h1>
+        @if (_person is not null)
+        {
+            <p class="header-subtitle">@_person.Name — @_person.Organisation</p>
+        }
+    </div>
+
+    <ToastNotification Message="@_toastMessage" />
+
+    <div class="page-body">
+        <div class="card card-green">
+            <h2 class="card-header card-header-green">Almost Done</h2>
+            <p class="medical-intro">
+                You have confirmed you are fit for duty. Please complete the fields below and tap
+                <strong>PROCEED TO SITE</strong> to finalise your sign-in.
+            </p>
+
+            <div class="form-group">
+                <label>PLEASE ADD ANY ADDITIONAL INFORMATION</label>
+                <p style="font-size:13px; color: var(--mid); margin: 0 0 8px;">
+                    Optional — e.g. specific tasks today, vehicle reg, expected duration on site
+                </p>
+                <textarea rows="3"
+                          placeholder="Enter any additional information here (optional)"
+                          @bind="_additionalInfo"
+                          @bind:event="oninput"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>ONE TIME USE SITE CODE</label>
+                <p style="font-size:13px; color: var(--mid); margin: 0 0 8px;">
+                    If you have been given a one-time site code by the Site Controller, enter it here.
+                    Otherwise leave blank.
+                </p>
+                <input type="text"
+                       class="site-code-input site-code-input-slim"
+                       placeholder="e.g. B42-A7X3"
+                       @bind="_siteCode"
+                       @bind:event="oninput"
+                       autocomplete="off" />
+            </div>
+
+        </div>
+    </div>
+
+    <div class="footer-action-bar">
+        <button class="btn-footer btn-footer-red"
+                type="button"
+                @onclick="BackToMedical"
+                disabled="@_isSubmitting"
+                aria-label="Back to medical declaration">
+            &larr; BACK
+        </button>
+        <button class="btn-footer btn-footer-green"
+                type="button"
+                @onclick="HandleConfirmAsync"
+                disabled="@_isSubmitting"
+                aria-label="Proceed to site">
+            @if (_isSubmitting)
+            {
+                <LoadingSpinner IsVisible="true" />
+                <span>PROCESSING...</span>
+            }
+            else
+            {
+                <span>&#x2705; PROCEED TO SITE</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    private SignInResponseModel? _person;
+    private string _additionalInfo = string.Empty;
+    private string _siteCode = string.Empty;
+    private bool _isSubmitting;
+    private string? _toastMessage;
+
+    protected override void OnInitialized()
+    {
+        _person = FlowState.CurrentPerson;
+        if (_person is null)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleConfirmAsync()
+    {
+        if (_person is null) return;
+        _isSubmitting = true;
+        try
+        {
+            var result = await RegisterApi.ConfirmFitAsync(
+                _person.Id,
+                string.IsNullOrWhiteSpace(_additionalInfo) ? null : _additionalInfo.Trim(),
+                string.IsNullOrWhiteSpace(_siteCode) ? null : _siteCode.Trim());
+
+            FlowState.SetConfirmation(result);
+            Navigation.NavigateTo("/fit-confirmed");
+        }
+        catch
+        {
+            ShowToast("Something went wrong. Please try again.");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void BackToMedical()
+    {
+        Navigation.NavigateTo("/medical");
+    }
+
+    private void ShowToast(string message)
+    {
+        _toastMessage = message;
+        _ = HideToastAsync();
+    }
+
+    private async Task HideToastAsync()
+    {
+        await Task.Delay(4000);
+        _toastMessage = null;
+        await InvokeAsync(StateHasChanged);
+    }
+}

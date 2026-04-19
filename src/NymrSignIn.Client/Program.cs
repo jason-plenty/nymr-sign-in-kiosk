@@ -16,6 +16,7 @@ var apiBaseUrl = builder.Configuration.GetValue<string>("ApiBaseUrl")
 // Kiosk HttpClient — anonymous, unchanged
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 builder.Services.AddScoped<IRegisterApiService, RegisterApiService>();
+builder.Services.AddScoped<SignInFlowState>();
 
 // Admin auth — MSAL via Azure AD
 builder.Services.AddMsalAuthentication(options =>

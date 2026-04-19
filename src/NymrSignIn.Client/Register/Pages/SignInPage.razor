@@ -1,5 +1,6 @@
 @page "/"
 @inject IRegisterApiService RegisterApi
+@inject SignInFlowState FlowState
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
@@ -9,22 +10,13 @@
     <!-- HEADER -->
     <div class="header-signin">
         <div>
-            <h1 class="header-title">Site Sign-In Register</h1>
+            <h1 class="header-title">Bridge 42 — Site Sign-In</h1>
             <p class="header-date">@_todayDisplay</p>
         </div>
         <OnSiteCounter Count="@_signedInList.Count" />
     </div>
 
-    <!-- CONFIRMATION / TOAST -->
-    <ConfirmationBanner IsVisible="@_showConfirmation"
-                        Name="@_confirmationName"
-                        Time="@_confirmationTime"
-                        Date="@_confirmationDate" />
-
-    @if (!_showConfirmation)
-    {
-        <ToastNotification Message="@_toastMessage" />
-    }
+    <ToastNotification Message="@_toastMessage" />
 
     <!-- BODY -->
     <div class="page-body">
@@ -55,7 +47,7 @@
                        type="text"
                        @bind="_formModel.Organisation"
                        @bind:event="oninput"
-                       placeholder="e.g. NYMR, ABC Contractors"
+                       placeholder="e.g. NYMR, CML, ABC Contractors"
                        autocomplete="off"
                        aria-required="true" />
                 @if (_orgError is not null)
@@ -76,29 +68,31 @@
                 }
             </div>
 
-            <button class="btn-primary"
-                    type="button"
-                    @onclick="HandleSignInAsync"
-                    disabled="@_isSubmitting"
-                    aria-label="Sign in now">
-                @if (_isSubmitting)
-                {
-                    <LoadingSpinner IsVisible="true" />
-                    <span>SIGNING IN...</span>
-                }
-                else
-                {
-                    <span>SIGN IN NOW</span>
-                }
-            </button>
         </div>
     </div>
 
-    <!-- FOOTER — SIGN OUT NAV -->
-    <div class="footer-signout-nav">
-        <p>LEAVING THE SITE? TAP THE BUTTON BELOW TO SIGN OUT</p>
-        <button class="btn-nav-signout" @onclick="GoToSignOut" aria-label="Go to sign out page">
-            GO TO SIGN OUT
+    <div class="footer-action-bar">
+        <button class="btn-footer btn-footer-red"
+                type="button"
+                @onclick="GoToSignOut"
+                disabled="@_isSubmitting"
+                aria-label="Go to sign out page">
+            &#x1F6AA; GO TO SIGN OUT
+        </button>
+        <button class="btn-footer btn-footer-green"
+                type="button"
+                @onclick="HandleSignInAsync"
+                disabled="@_isSubmitting"
+                aria-label="Sign in now">
+            @if (_isSubmitting)
+            {
+                <LoadingSpinner IsVisible="true" />
+                <span>SIGNING IN...</span>
+            }
+            else
+            {
+                <span>&#x2713; SIGN IN</span>
+            }
         </button>
     </div>
 </div>
@@ -108,10 +102,6 @@
     private SignaturePad? _signaturePad;
     private List<SignedInEntry> _signedInList = [];
     private bool _isSubmitting;
-    private bool _showConfirmation;
-    private string _confirmationName = string.Empty;
-    private string _confirmationTime = string.Empty;
-    private string _confirmationDate = string.Empty;
     private string? _toastMessage;
     private string? _nameError;
     private string? _orgError;
@@ -122,6 +112,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        FlowState.Reset();
         await RefreshAsync();
         StartPolling();
     }
@@ -193,20 +184,8 @@
             }
 
             var result = await RegisterApi.SignInAsync(_formModel);
-
-            _confirmationName = _formModel.Name.Trim();
-            _confirmationTime = result.TimeIn;
-            _confirmationDate = result.DateIn;
-            _showConfirmation = true;
-
-            _formModel.Name = string.Empty;
-            _formModel.Organisation = string.Empty;
-            _formModel.SignatureBase64 = null;
-            if (_signaturePad is not null) await _signaturePad.ClearAsync();
-
-            await RefreshAsync();
-
-            _ = HideConfirmationAfterDelayAsync();
+            FlowState.StartFlow(result);
+            Navigation.NavigateTo("/medical");
         }
         catch
         {
@@ -216,13 +195,6 @@
         {
             _isSubmitting = false;
         }
-    }
-
-    private async Task HideConfirmationAfterDelayAsync()
-    {
-        await Task.Delay(6000);
-        _showConfirmation = false;
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ClearSignatureAsync()

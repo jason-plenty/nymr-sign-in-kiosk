@@ -1,16 +1,100 @@
 <div class="card">
-    <h2 class="card-header">Site Safety Briefing</h2>
-    <div class="briefing-text">Welcome to the NYMR Construction Site.
+    <h2 class="card-header">Bridge 42 &ndash; NYMR &mdash; Site Introduction Briefing</h2>
 
-Before entering this site you MUST read and understand the following:
+    @foreach (var item in _sections)
+    {
+        <div class="medical-group">
+            <h3 class="medical-group-title">@item.Title</h3>
+            <div class="briefing-text">@item.Content</div>
+        </div>
+    }
 
-&#x2022; All visitors must report to the Site Manager on arrival.
-&#x2022; Hard hats, high-visibility clothing and safety footwear must be worn at all times beyond this point.
-&#x2022; Do not operate any machinery or equipment unless authorised.
-&#x2022; Report all accidents, incidents and near-misses immediately.
-&#x2022; Be aware of overhead works, moving plant and uneven surfaces.
-&#x2022; Emergency assembly point is at the main car park entrance.
-&#x2022; First aid kit is located in the site office.
-
-By signing in below you confirm you have read and understood these requirements.</div>
+    <div class="info-panel">
+        <strong>Declaration:</strong> I confirm that I have received and understood the NYMR Bridge 42 Site Introduction Briefing and agree to comply with all site rules and safety requirements. I also accept that a separate briefing will be provided by CML before I am authorised to enter site or carry out any activity in relation to this project.
+    </div>
+    <div class="info-panel" style="background: var(--green-bg); border-color: var(--green); margin-top: 12px; font-style: italic;">
+        "NYMR say Safety, respect for the local community, and protection of the railway asset are paramount. If in doubt, stop work and seek guidance from the Site Manager"
+    </div>
 </div>
+
+@code {
+    private readonly List<(string Title, string Content)> _sections =
+    [
+        ("Project Overview",
+@"Project: Bridge 42 Temporary Propping Works
+Location: Grosmont, North Yorkshire Moors Railway (NYMR)
+Client: NYMR Trust
+Main Contractor: Construction Marine LTD
+
+Scope of Works:
+• Installation of temporary propping to the brick arch intrados.
+• River damming and construction of temporary foundations.
+• Scaffolding and access installations.
+• Crane operations for lifting and positioning of propping elements.
+• Monitoring of bridge stability and levels.
+• Associated site setup and reinstatement works.
+
+The worksite is designated as a High Street Environment within a TIII Possession, meaning the railway is blocked to all train movements and under the control of the NYMR Engineering Supervisor (ES)."),
+
+        ("Site Boundaries",
+@"The limits of the worksite are clearly defined by:
+• Heras fencing, and
+• Existing stone parapet walls.
+• Existing wooden boundary fencing.
+
+Unauthorised access beyond these boundaries is strictly prohibited."),
+
+        ("Access & Egress",
+@"Access to and from the site is strictly controlled via:
+1. South East Gate – pedestrian access via the public footpath.
+2. South Level Crossing (Grosmont LX) Gates – for plant, deliveries, and emergency access.
+
+All personnel must attend this induction and sign in and out of the site. Visitors and delivery vehicles must be escorted at all times."),
+
+        ("Mandatory PPE",
+@"• Safety helmet
+• High-visibility clothing
+• Safety boots
+• Gloves
+• Eye protection
+
+Additional PPE (e.g., life jackets, harnesses, or hearing protection) must be worn as required by specific tasks."),
+
+        ("Key Site Hazards",
+@"• Working near water – risk of drowning; life-saving equipment provided.
+• Lifting operations – obey exclusion zones and banksman instructions.
+• Public interface – maintain vigilance near footpaths and local businesses.
+• Heavy plant movements – follow designated routes and site speed limits.
+• Structural stability – do not interfere with the bridge or propping system."),
+
+        ("Track Safety Risk",
+@"• Don't step on sleepers – risk of slips & falls, likely to be slippery especially when damp. Use ballast.
+• Avoid Points and Point Rodding – risk of trips, falls, trapping of foot.
+• Don't step on rails – risk of slips and falls.
+• Don't move points – obey Engineering Supervisor instructions.
+• Remain within the worksite or public areas – strictly no access to any other track or lineside area."),
+
+        ("Emergency Arrangements",
+@"• Emergency Services: Dial 999 or 112
+• Assembly Point: Near the South East Gate
+• Emergency Access Route: Via Grosmont Level Crossing
+
+All accidents, incidents, and near misses must be reported immediately to the Site Manager."),
+
+        ("Environmental Controls",
+@"• Spill kits are available; report any pollution immediately.
+• Waste must be disposed of in designated areas.
+• Protect the river from contamination at all times.
+• Respect the local community by minimising noise and disturbance."),
+
+        ("Site Rules",
+@"• The site operates as a controlled construction environment.
+• Use of the local pub is strictly prohibited.
+• No more than two workers are permitted in local shops at any one time to minimise disruption to the community.
+• Smoking is not permitted anywhere on site.
+• A designated smoking area is provided within the fenced compound in the car park, and this is the only location where smoking is allowed.
+• Alcohol and drugs are strictly prohibited.
+• Follow all instructions from the Engineering Supervisor and Site Manager.
+• Maintain good housekeeping and respect neighbouring properties.")
+    ];
+}
