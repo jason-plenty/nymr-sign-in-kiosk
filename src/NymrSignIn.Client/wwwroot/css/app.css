@@ -668,8 +668,19 @@ textarea:focus {
 /* ---- Contact links on not-permitted screen ---- */
 .contact-link {
     display: block;
+    width: 100%;
+    box-sizing: border-box;
     text-decoration: none;
     margin-bottom: 10px;
+    padding: 0;
+    background: none;
+    border: none;
+    text-align: left;
+}
+
+.contact-link:disabled {
+    opacity: 0.85;
+    cursor: default;
 }
 
 .contact-link > div {
