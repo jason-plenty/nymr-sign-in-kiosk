@@ -66,6 +66,13 @@ public sealed class RegisterApiService : IRegisterApiService
             ?? throw new InvalidOperationException("Failed to deserialise declare-not-fit response.");
     }
 
+    public async Task SendNotFitAlertAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/v1/register/{id}/send-not-fit-alert", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<SiteCodeSubmissionResult> SubmitSiteCodeAsync(
         Guid id,
         string siteCode,

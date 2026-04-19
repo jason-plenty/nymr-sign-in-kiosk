@@ -38,4 +38,26 @@ public sealed class AdminRegisterController : ControllerBase
         var result = await _adminRegisterService.SearchAsync(criteria, cancellationToken);
         return Ok(result);
     }
+
+    [HttpGet("export")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ExportAsync(
+        [FromQuery] RegisterSearchCriteria criteria,
+        [FromServices] IValidator<RegisterSearchCriteria> validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(criteria, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(
+                new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        var csvBytes = await _adminRegisterService.ExportCsvAsync(criteria, cancellationToken);
+        var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd-HHmmss");
+        return File(csvBytes, "text/csv", $"site-register-{timestamp}.csv");
+    }
 }

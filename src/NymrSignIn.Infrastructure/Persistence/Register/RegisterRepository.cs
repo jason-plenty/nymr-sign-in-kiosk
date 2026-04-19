@@ -49,6 +49,17 @@ public sealed class RegisterRepository : IRegisterRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<SiteRegisterEntry>> ListFilteredAsync(
+        RegisterSearchCriteria criteria,
+        CancellationToken cancellationToken)
+    {
+        var query = _context.SiteRegisterEntries.AsNoTracking().AsQueryable();
+        query = ApplyFilters(query, criteria);
+        query = ApplySort(query, criteria.SortBy, criteria.SortDescending);
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
     public async Task<PagedResult<RegisterEntryDto>> SearchAsync(
         RegisterSearchCriteria criteria,
         CancellationToken cancellationToken)

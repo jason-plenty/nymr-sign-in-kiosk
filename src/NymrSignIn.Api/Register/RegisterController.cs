@@ -114,6 +114,30 @@ public sealed class RegisterController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/send-not-fit-alert")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> SendNotFitAlertAsync(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _registerService.SendNotFitAlertAsync(id, cancellationToken);
+            return Ok(new { ok = true });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Cannot send not-fit alert",
+                detail: ex.Message);
+        }
+    }
+
     [HttpPost("{id:guid}/submit-site-code")]
     [ProducesResponseType(typeof(ConfirmFitResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]

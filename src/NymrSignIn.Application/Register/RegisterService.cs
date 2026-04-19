@@ -150,20 +150,27 @@ public sealed class RegisterService
 
         _logger.LogInformation("Person {Name} declared NOT FIT — site code issued", entry.Name);
 
-        try
-        {
-            await _emailService.SendNotFitAlertAsync(entry, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send not-fit alert email for entry {EntryId}", entry.Id);
-        }
-
         return new DeclareNotFitResponse(
             entry.Id,
             _siteOptions.SiteController.Name,
             _siteOptions.SiteController.Email,
             _siteOptions.SiteController.Phone);
+    }
+
+    public async Task SendNotFitAlertAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var entry = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Register entry {id} not found.");
+
+        if (entry.Status is not SiteStatus.Denied)
+        {
+            throw new InvalidOperationException(
+                $"Entry {id} is in status {entry.Status}; not-fit alert can only be sent for denied entries.");
+        }
+
+        await _emailService.SendNotFitAlertAsync(entry, cancellationToken);
+
+        _logger.LogInformation("Not-fit alert email sent on request for entry {EntryId}", entry.Id);
     }
 
     public async Task<ConfirmFitResponse> SubmitSiteCodeAsync(

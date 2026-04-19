@@ -3,11 +3,29 @@
 @layout AdminLayout
 @inject IAdminApiService AdminApi
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>Sign-In Register — Admin</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4 admin-page-title">Site Sign-In Register</MudText>
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <MudText Typo="Typo.h4" Class="admin-page-title">Site Sign-In Register</MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Download"
+               Disabled="@_isExporting"
+               OnClick="DownloadCsvAsync">
+        @if (_isExporting)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            <span>Preparing&hellip;</span>
+        }
+        else
+        {
+            <span>Download CSV</span>
+        }
+    </MudButton>
+</MudStack>
 
 <MudPaper Class="pa-4 mb-4 admin-filter-panel" Elevation="1">
     <MudGrid>
@@ -97,6 +115,7 @@
     private RegisterEntryStatus _status = RegisterEntryStatus.All;
     private string? _search;
     private bool _isLoading;
+    private bool _isExporting;
     private CancellationTokenSource? _loadCts;
 
     private async Task<GridData<RegisterEntryDto>> LoadGridDataAsync(GridState<RegisterEntryDto> state)
@@ -210,6 +229,55 @@
         if (_grid is not null)
         {
             await _grid.ReloadServerData();
+        }
+    }
+
+    private async Task DownloadCsvAsync()
+    {
+        if (_isExporting) return;
+        _isExporting = true;
+
+        try
+        {
+            var criteria = new RegisterSearchCriteria
+            {
+                FromDate = _fromDate.HasValue ? DateOnly.FromDateTime(_fromDate.Value) : null,
+                ToDate = _toDate.HasValue ? DateOnly.FromDateTime(_toDate.Value) : null,
+                Status = _status,
+                Search = _search,
+                Page = 1,
+                PageSize = int.MaxValue,
+                SortBy = RegisterSortField.TimeIn,
+                SortDescending = true
+            };
+
+            var bytes = await AdminApi.ExportCsvAsync(criteria);
+            var base64 = Convert.ToBase64String(bytes);
+            var fileName = $"site-register-{DateTime.Now:yyyy-MM-dd-HHmmss}.csv";
+
+            await JS.InvokeVoidAsync("downloadBase64File", fileName, "text/csv", base64);
+
+            Snackbar.Add($"Exported {bytes.Length / 1024} KB.", Severity.Success);
+        }
+        catch (AccessTokenNotAvailableException tokenEx)
+        {
+            tokenEx.Redirect();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("You are not signed in.", Severity.Warning);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.Forbidden)
+        {
+            Snackbar.Add("You do not have admin access.", Severity.Warning);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Failed to export register. Please try again.", Severity.Error);
+        }
+        finally
+        {
+            _isExporting = false;
         }
     }
 

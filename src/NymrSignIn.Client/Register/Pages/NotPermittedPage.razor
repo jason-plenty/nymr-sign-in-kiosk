@@ -39,20 +39,37 @@
 
             @if (!string.IsNullOrWhiteSpace(ControllerPhone))
             {
-                <a class="contact-link contact-link-call" href="tel:@ControllerPhoneDial">
+                <div class="contact-link contact-link-call" role="note" aria-label="Site Controller phone number">
                     <div>&#x1F4DE; CALL @ControllerName.ToUpper(): @ControllerPhone</div>
-                </a>
+                </div>
             }
 
             @if (!string.IsNullOrWhiteSpace(ControllerEmail))
             {
-                <a class="contact-link contact-link-email" href="mailto:@ControllerEmail">
-                    <div>&#x2709; EMAIL: @ControllerEmail</div>
-                </a>
+                <button class="contact-link contact-link-email"
+                        type="button"
+                        @onclick="HandleSendEmailAsync"
+                        disabled="@(_isSendingEmail || _emailSent)"
+                        aria-label="Email the Site Controller">
+                    <div>
+                        @if (_isSendingEmail)
+                        {
+                            <span>SENDING EMAIL&hellip;</span>
+                        }
+                        else if (_emailSent)
+                        {
+                            <span>&#x2713; EMAIL SENT TO @ControllerEmail.ToUpper()</span>
+                        }
+                        else
+                        {
+                            <span>&#x2709; EMAIL @ControllerName.ToUpper()</span>
+                        }
+                    </div>
+                </button>
             }
 
             <div class="info-panel">
-                &#x2139; An email has been automatically sent to the Site Controller with your details and a one-time site code. If they authorise your entry, they will give you the code to enter below.
+                &#x2139; Tap <strong>EMAIL</strong> to notify the Site Controller of your situation. They will call you on the number you have given, and issue a one-time code if they authorise your entry.
             </div>
         </div>
 
@@ -119,6 +136,8 @@
     private string _additionalInfo = string.Empty;
     private string _siteCode = string.Empty;
     private bool _isSubmitting;
+    private bool _isSendingEmail;
+    private bool _emailSent;
     private string? _toastMessage;
     private string? _codeError;
 
@@ -139,8 +158,25 @@
     private string ControllerEmail => _context?.SiteControllerEmail ?? string.Empty;
     private string ControllerPhone => _context?.SiteControllerPhone ?? string.Empty;
 
-    private string ControllerPhoneDial =>
-        new string((ControllerPhone ?? string.Empty).Where(c => char.IsDigit(c) || c == '+').ToArray());
+    private async Task HandleSendEmailAsync()
+    {
+        if (_person is null || _emailSent) return;
+        _isSendingEmail = true;
+        try
+        {
+            await RegisterApi.SendNotFitAlertAsync(_person.Id);
+            _emailSent = true;
+            ShowToast($"Email sent to {ControllerName}.");
+        }
+        catch
+        {
+            ShowToast("Failed to send email. Please try again.");
+        }
+        finally
+        {
+            _isSendingEmail = false;
+        }
+    }
 
     private async Task HandleSubmitCodeAsync()
     {

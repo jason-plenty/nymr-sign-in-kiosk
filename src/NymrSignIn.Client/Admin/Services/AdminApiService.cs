@@ -28,6 +28,16 @@ public sealed class AdminApiService : IAdminApiService
         return result ?? new PagedResult<RegisterEntryDto>([], 0, criteria.Page, criteria.PageSize);
     }
 
+    public async Task<byte[]> ExportCsvAsync(
+        RegisterSearchCriteria criteria,
+        CancellationToken cancellationToken = default)
+    {
+        var client = _httpClientFactory.CreateClient(ClientName);
+        var query = BuildQueryString(criteria);
+        var url = $"api/v1/admin/register/export{query}";
+        return await client.GetByteArrayAsync(url, cancellationToken);
+    }
+
     private static string BuildQueryString(RegisterSearchCriteria criteria)
     {
         var parts = new List<string>

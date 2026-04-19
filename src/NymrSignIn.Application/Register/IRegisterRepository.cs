@@ -10,4 +10,5 @@ public interface IRegisterRepository
     Task AddAsync(SiteRegisterEntry entry, CancellationToken cancellationToken);
     Task UpdateAsync(SiteRegisterEntry entry, CancellationToken cancellationToken);
     Task<PagedResult<RegisterEntryDto>> SearchAsync(RegisterSearchCriteria criteria, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SiteRegisterEntry>> ListFilteredAsync(RegisterSearchCriteria criteria, CancellationToken cancellationToken);
 }
