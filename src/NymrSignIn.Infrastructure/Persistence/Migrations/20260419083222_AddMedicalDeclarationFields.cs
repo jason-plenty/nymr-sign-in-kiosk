@@ -53,8 +53,8 @@ namespace NymrSignIn.Infrastructure.Persistence.Migrations
                 defaultValue: "OnSite");
 
             migrationBuilder.Sql(
-                "UPDATE kiosk.SiteRegisterEntries SET Status = 'OnSite', MedicalStatus = 'Fit' " +
-                "WHERE Status IS NULL OR Status = '';");
+                "UPDATE kiosk.SiteRegisterEntries SET MedicalStatus = 'Fit' " +
+                "WHERE MedicalStatus = 'NotDeclared' AND Status = 'OnSite';");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SiteRegisterEntries_DateIn_Status",
